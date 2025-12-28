@@ -1,0 +1,180 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM
+}
+
+model User {
+  id                String    @id @default(uuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  email             String    @unique
+  phone             String?   @unique
+  fullName          String
+  avatarUrl         String?
+  bio               String?
+  role              UserRole  @default(CUSTOMER)
+  locationCity      String?
+  locationArea      String?
+  latitude          Decimal?  @db.Decimal(10,8)
+  longitude         Decimal?  @db.Decimal(11,8)
+  hourlyRate        Decimal?  @db.Decimal(10, 2)
+  verificationBadge Boolean   @default(false)
+
+  services          Service[] @relation("ProviderServices")
+  providerBookings  Booking[] @relation("ProviderBookings")
+  customerBookings  Booking[] @relation("CustomerBookings")
+  messages          Message[]
+  ratings           Rating[]  @relation("CustomerRatings")
+  notifications     Notification[] // Add this line
+
+  @@index([email])
+  @@index([latitude, longitude])
+}
+ 
+model Rating {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  rating      Int       // 1-5 stars
+  comment     String?   // Optional review text
+
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId   String    @unique // One rating per booking
+  service     Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId   String
+  customer    User      @relation("CustomerRatings", fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+
+  @@index([serviceId])
+  @@index([bookingId])
+  @@index([customerId])
+}
+
+enum NotificationType {
+  BOOKING_CREATED
+  BOOKING_ACCEPTED
+  BOOKING_DECLINED
+  BOOKING_COMPLETED
+  BOOKING_CANCELLED
+  MESSAGE_RECEIVED
+  RATING_RECEIVED
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  createdAt DateTime         @default(now())
+  read      Boolean          @default(false)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?          // Optional link to related resource (e.g., /bookings/:id)
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  // Optional references
+  bookingId String?
+  messageId String?
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model Service {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  title          String
+  category       String
+  description    String
+  hourlyRate     Decimal   @db.Decimal(10, 2)
+  locationCity   String?
+  locationArea   String?
+  latitude       Decimal?  @db.Decimal(10, 8)
+  longitude      Decimal?  @db.Decimal(11, 8)
+  isActive       Boolean   @default(true)
+  averageRating  Decimal?  @db.Decimal(3, 2)
+  totalReviews   Int       @default(0)
+
+  provider       User      @relation("ProviderServices", fields: [providerId], references: [id])
+  providerId     String
+  bookings       Booking[]
+  ratings        Rating[]
+
+  @@index([providerId])
+  @@index([category])
+  @@index([latitude, longitude])
+}
+
+model Booking {
+  id             String         @id @default(uuid())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  status         BookingStatus  @default(PENDING)
+  requestedAt    DateTime       @default(now())
+  scheduledFor   DateTime?
+  description    String?
+  address        String?
+  responseDueAt  DateTime?
+
+  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceId      String
+  customer       User           @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+  customerId     String
+  provider       User           @relation("ProviderBookings", fields: [providerId], references: [id], onDelete: Cascade)
+  providerId     String
+
+  messages       Message[]
+  rating         Rating?
+
+  @@index([serviceId])
+  @@index([customerId])
+  @@index([providerId])
+  @@index([status])
+}
+
+model Message {
+  id          String       @id @default(uuid())
+  createdAt   DateTime     @default(now())
+  body        String
+  type        MessageType  @default(TEXT)
+  attachment  String?
+
+  booking     Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId   String
+  sender      User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  senderId    String?
+
+  @@index([bookingId])
+  @@index([senderId])
+}

@@ -25,6 +25,10 @@ export const createApp = () => {
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
   
   // Routes
+  app.get("/", (_req, res) => {
+    res.send("Okay");
+  });
+  
   app.get("/health", (_req, res) => {
     res.json({
       status: "ok",

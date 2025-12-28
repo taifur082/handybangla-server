@@ -162,7 +162,6 @@ export async function notifyMessageReceived(message: any, recipientId: string) {
     message: `You have a new message in booking #${message.bookingId.slice(0, 8)}`,
     link: `/bookings`,
     bookingId: message.bookingId,
-    messageId: message.id,
   }).catch((err) => {
     console.error("Failed to send email notification:", err);
   });

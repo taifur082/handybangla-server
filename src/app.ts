@@ -65,6 +65,12 @@ export const createApp = () => {
     maxAge: 86400, // Cache preflight requests for 24 hours
   }));
 
+  // Configure Helmet to work with CORS
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+  }));
+
   app.use(express.json());
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
   

@@ -13,6 +13,7 @@ import { notFoundHandler } from "./middleware/notFound";
 import { errorHandler } from "./middleware/errorHandler";
 import { messagesRouter } from "./routes/messages";
 import { adminRouter } from "./routes/admin";
+import { notificationsRouter } from "./routes/notifications";
 
 export const createApp = () => {
   const app = express();
@@ -95,6 +96,7 @@ export const createApp = () => {
   app.use("/api/ratings", ratingsRouter);
   app.use("/api/messages", messagesRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api/notifications", notificationsRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
 
